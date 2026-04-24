@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Runaway Kitty</title>
+<style>
+body {
+  margin: 0;
+  background: black;
+  color: white;
+  text-align: center;
+}
+
+canvas {
+  background: #222;
+  display: block;
+  margin: 20px auto;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 18px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h2>Press SPACE to Jump 🐱</h2>
+
+<canvas id="gameCanvas" width="1200" height="400"></canvas>
+<button id="restartBtn" onclick="restartGame()">Restart</button>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const sprite = new Image();
+sprite.src = "pixelcatsprite.png";
+
+const SPRITE_WIDTH = 350;
+const SPRITE_HEIGHT = 331;
+
+const bgImage = new Image();
+bgImage.src = "landscape.png";
+
+// CAT
+let cat = {
+  x: 80,
+  y: 300,
+  width: 40,
+  height: 40,
+  dy: 0,
+  jumping: false,
+  frameX: 0,
+  frameY: 0,
+};
+
+let gravity = 0.6;
+let worldX = 0;
+let speed = 3;
+
+// STATE
+let hasWon = false;
+let gameOver = false;
+
+// COINS
+let coins = [];
+let collectedCoins = 0;
+let coinGoal = 20;
+
+// SOUNDS
+const jumpsound = new Audio("jump.mp3");
+const coinsound = new Audio("coin.mp3");
+const yaysound = new Audio("yay.mp3");
+
+// BUSHES
+let bushes = [];
+
+function spawnCoin(x) {
+  coins.push({
+    x: x,
+    y: Math.random() > 0.5 ? 300 : 240,
+    collected: false
+  });
+}
+
+function spawnBush(x) {
+  bushes.push({
+    x: x,
+    y: 300,
+    width: 20,
+    height: 20
+  });
+}
+
+function setup() {
+  coins = [];
+  bushes = [];
+
+  for (let i = 0; i < 10; i++) spawnCoin(300 + i * 200);
+  for (let i = 0; i < 8; i++) spawnBush(500 + i * 350);
+}
+
+setup();
+
+// INPUT
+document.addEventListener("keydown", (e) => {
+  if (
+    e.code === "Space" && 
+    !e.repeat &&
+    !cat.jumping &&
+    !gameOver &&
+    !hasWon
+  ) {
+    cat.dy = -12;
+    cat.jumping = true;
+    cat.frameY = 1;
+    jumpsound.play();
+  }
+});
+window.addEventListener('click', (event) => {
+    console.log('Clicked anywhere on the page!');
+    console.log('Clicked element:', event.target); // The specific element clicked
+     if (
+    
+    !cat.jumping &&
+    !gameOver &&
+    !hasWon
+  ) {
+    cat.dy = -12;
+    cat.jumping = true;
+    cat.frameY = 1;
+    jumpsound.play();
+  }
+});
+
+
+function update() {
+  if (gameOver || hasWon) return;
+
+  cat.dy += gravity;
+  cat.y += cat.dy;
+
+  if (cat.y >= 300) {
+    cat.y = 300;
+    cat.dy = 0;
+    cat.jumping = false;
+    cat.frameY = 0;
+  }
+
+  worldX += speed;
+
+  // COINS
+  coins.forEach(c => {
+    if (!c.collected) {
+      let x = c.x - worldX;
+
+      if (
+        cat.x < x + 15 &&
+        cat.x + cat.width > x &&
+        cat.y < c.y + 15 &&
+        cat.y + cat.height > c.y
+      ) {
+        c.collected = true;
+        collectedCoins++;
+        coinsound.play();
+        
+        if (collectedCoins >= coinGoal) {
+          hasWon = true;
+                  }
+      }
+    }
+  });
+
+  // BUSHES (LOSE)
+  bushes.forEach(b => {
+    let bx = b.x - worldX;
+
+    if (
+      cat.x + cat.width > bx &&
+      cat.x < bx + b.width &&
+      cat.y + cat.height > b.y &&
+      cat.y < b.y + b.height
+    ) {
+      gameOver = true;
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+  // ground
+  ctx.fillStyle = "green";
+  ctx.fillRect(0, 330, canvas.width, 70);
+
+  // bushes
+  ctx.fillStyle = "darkgreen";
+  bushes.forEach(b => {
+    ctx.fillRect(b.x - worldX, b.y, b.width, b.height);
+  });
+
+  // cat
+  ctx.drawImage(
+    sprite,
+    cat.frameX * SPRITE_WIDTH,
+    cat.frameY * SPRITE_HEIGHT,
+    SPRITE_WIDTH,
+    SPRITE_HEIGHT,
+    cat.x,
+    cat.y,
+    cat.width,
+    cat.height
+  );
+
+  // coins
+  ctx.fillStyle = "gold";
+  coins.forEach(c => {
+    if (!c.collected) {
+      ctx.beginPath();
+      ctx.arc(c.x - worldX, c.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // SCORE
+  ctx.fillStyle = "white";
+  ctx.font = "18px Arial";
+  ctx.fillText("Coins: " + collectedCoins, 20, 30);
+
+  // ===== PROGRESS BAR (FINISH LINE) =====
+  const barWidth = 700;
+  const barHeight = 25;
+  const barX = (canvas.width - barWidth) / 2;
+  const barY = 50;
+
+  let progress = collectedCoins / coinGoal;
+  progress = Math.max(0, Math.min(1, progress));
+
+  if (window.displayProgress === undefined) {
+    window.displayProgress = 0;
+  }
+
+  window.displayProgress += (progress - window.displayProgress) * 0.1;
+
+  ctx.fillStyle = "#333";
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+
+  ctx.fillStyle = "#00ff88";
+  ctx.fillRect(barX, barY, barWidth * window.displayProgress, barHeight);
+
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+  // WIN / LOSE TEXT
+  if (hasWon) {
+    ctx.fillStyle = "yellow";
+    ctx.font = "40px Arial";
+    ctx.fillText("YOU WIN! 🏁", 450, 150);
+    yaysound.play();
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = "red";
+    ctx.font = "50px Arial";
+    ctx.fillText("YOU LOSE 💀", 420, 180);
+  }
+}
+
+function gameLoop() {
+  update();
+
+  // infinite coins only while playing
+  if (!hasWon && !gameOver) {
+    coins = coins.filter(c => c.x - worldX > -50);
+
+    let farthest = coins.length
+      ? Math.max(...coins.map(c => c.x))
+      : worldX + 300;
+
+    while (farthest - worldX < 1200) {
+      farthest += 200;
+      spawnCoin(farthest);
+    }
+  }
+
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+  cat.x = 80;
+  cat.y = 300;
+  cat.dy = 0;
+  cat.jumping = false;
+  cat.frameY = 0;
+
+  worldX = 0;
+  collectedCoins = 0;
+  hasWon = false;
+  gameOver = false;
+
+  window.displayProgress = 0;
+
+  setup();
+
+  document.getElementById("restartBtn").blur();
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
