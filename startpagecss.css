@@ -1,0 +1,7 @@
+button{width:280px; height:110px; font-size: 44px; font-family: cooper black; color:#394931; border-color: #90997f; background-color: #d4d0b9 ; border-radius: 25px; margin-top: 10px; }
+#game{margin:auto;text-align:center;width:1750px; height:900px;border: solid 5px; border-color: #394931 ; background-image: url(flower.jpg); ... ;background-repeat: no-repeat;}
+#buttons{text-align: center; margin-top: 200px;}
+body, html {
+  height: 100%;}
+
+#Runaway_Kitty{font-family: fantasy; font-size: 90px; color:#493f2f;text-align: center;}
