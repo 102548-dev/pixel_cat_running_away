@@ -108,7 +108,7 @@ setup();
 // INPUT
 document.addEventListener("keydown", (e) => {
   if (
-    e.code === "Space" &&
+    e.code === "Space" && 
     !e.repeat &&
     !cat.jumping &&
     !gameOver &&
@@ -120,6 +120,22 @@ document.addEventListener("keydown", (e) => {
     jumpsound.play();
   }
 });
+window.addEventListener('click', (event) => {
+    console.log('Clicked anywhere on the page!');
+    console.log('Clicked element:', event.target); // The specific element clicked
+     if (
+    
+    !cat.jumping &&
+    !gameOver &&
+    !hasWon
+  ) {
+    cat.dy = -12;
+    cat.jumping = true;
+    cat.frameY = 1;
+    jumpsound.play();
+  }
+});
+
 
 function update() {
   if (gameOver || hasWon) return;
